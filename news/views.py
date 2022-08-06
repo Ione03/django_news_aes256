@@ -97,16 +97,16 @@ def download_link(request, pk=None):
 
             aes256 = PyAES256()
             enc = aes256.encrypt(doc.file_path.url, secret_key)
-            print('result = ')
-            print(enc)
+            # print('result = ')
+            # print(enc)
             # simpan signature for decrypt process
             
 
             # Ubah data dengan type byte menjadi string
             enc['salt'] = bytes.decode(enc['salt'])
             enc['iv'] = bytes.decode(enc['iv'])
-            print('result_after = ')
-            print(enc)
+            # print('result_after = ')
+            # print(enc)
 
             signature = signing.dumps(enc, key=secret_key, compress=True)
             # a = enc['iv']
@@ -118,9 +118,9 @@ def download_link(request, pk=None):
 
             # enc_link = signing.dumps(enc['url'], key=enc['iv'], salt=enc['salt'], compress=True)
             enc_link = enc['url'].replace('=', '-')
-            print('result enc_signing = ')
-            print(enc_link)
-            # enc_link = enc_link.replace(':','+')
+            # print('result enc_signing = ')
+            # print(enc_link)
+            # # enc_link = enc_link.replace(':','+')
             context['enc_link'] = enc_link
             
 
@@ -129,15 +129,15 @@ def download_link(request, pk=None):
                 domain = domain, status=StatusActive.NOT_ACTIVE).order_by('-created_at')[:1]
             if obj2:
                 obj2 = obj2.get()
-                print(obj2)
+                # print(obj2)
 
                 a = obj2.created_at
                 b = datetime.datetime.now()
                 interval = b-a
                 # konversi ke detik
                 interval = (interval.days * 24 * 60 * 60) + interval.seconds
-                print('interval = ')
-                print(interval)
+                # print('interval = ')
+                # print(interval)
                 if (interval > (60 * 60 * 24)): # tunggu sampai 1 hari baru download file yg sama aktif kembali
                     
 
@@ -181,22 +181,22 @@ def download_link(request, pk=None):
 
             try:
                 signer = signing.loads(obj.signature, key=secret_key, max_age=expired_link)    
-                print('signer = ')
-                print(signer)
+                # print('signer = ')
+                # print(signer)
             except signing.BadSignature:
-                print('bad dignature')
+                # print('bad dignature')
                 context['expired'] = 'expired'  # link is expired
             
             # hitung sisa waktu berjalan untuk di tampilkan di interface
-            print('next ()')
+            # print('next ()')
             if signer:
                 a = obj.created_at
                 b = datetime.datetime.now()
                 interval = b-a
                 # konversi ke detik
                 interval = (interval.days * 24 * 60 * 60) + interval.seconds
-                print('interval = ')
-                print(interval)
+                # print('interval = ')
+                # print(interval)
                 context['expired_link'] = expired_link - interval
 
     # get top 4 News for home page
@@ -216,7 +216,7 @@ def download_link(request, pk=None):
 
 
 def redirect_link(request, slug):
-    print(slug)
+    # print(slug)
     context = {}
     context['expired'] = 'expired'
     expired_link = getattr(settings, "EXPIRED_LINK", None)
@@ -227,14 +227,14 @@ def redirect_link(request, slug):
 
 
     id = request.GET['id']
-    print(id)
+    # print(id)
     doc = DownloadLink.objects.filter(id=id, enc_link=slug)
-    print(doc)
+    # print(doc)
     if doc:
-        print('enter doc')
+        # print('enter doc')
         doc = doc.get()
         file_path = doc.documents.file_path.url
-        print(file_path)
+        # print(file_path)
 
         a = doc.created_at
         b = datetime.datetime.now()
@@ -254,4 +254,4 @@ def redirect_link(request, slug):
 def set_inactive_link(request, slug):
     id = request.GET['id']
     DownloadLink.objects.filter(id=id, enc_link=slug).update(status=StatusActive.NOT_ACTIVE)
-    return HttpResponse('ok')
+    return HttpResponse('Done')
