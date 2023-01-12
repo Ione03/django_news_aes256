@@ -41,8 +41,90 @@ def index(request):
 
     documents = Documents.objects.order_by('-created_at')[:5]
     context['documents'] = documents
+
+
+    logo = Logo.objects.annotate(foto=get_top_foto(model_criteria)) \
+                .order_by('-created_at')[:1]              
+    context['logo'] = logo
+
+    
+    about_us = Pages.objects.filter(kind='about us')[:1]       
+    print('about_us', about_us)       
+    if about_us:        
+        context['about_us'] = about_us.get()
+    
+
+    social_media = SocialMedia.objects.all().order_by('-created_at')            
+    context['social_media'] = social_media
  
     return render(request, 'news/index.html', context) 
+
+
+def about_us(request):
+    context = {}
+    model_criteria = {'object_id' : OuterRef('id')}
+    logo = Logo.objects.annotate(foto=get_top_foto(model_criteria)) \
+                .order_by('-created_at')[:1]              
+    context['logo'] = logo
+
+    social_media = SocialMedia.objects.all().order_by('-created_at')            
+    context['social_media'] = social_media
+ 
+    
+    about_us = Pages.objects.filter(kind='about us')[:1]       
+    print('about_us', about_us)       
+    if about_us:        
+        context['about_us'] = about_us.get()
+    # get top 3 category for menu 
+    # category = Categories.objects.order_by('id')[:3]
+    # context['category'] = category
+
+    # get top 4 News for home page
+    # news = News.objects.order_by('-created_at')[:4]
+    # context['news'] = news
+
+    # model_criteria = {'object_id' : OuterRef('id')}
+    # news = News.objects.annotate(foto=get_top_foto(model_criteria)) \
+    #             .order_by('-created_at')[:4]              
+    # context['news'] = news
+    # print(object_list)
+
+    # documents = Documents.objects.order_by('-created_at')[:5]
+    # context['documents'] = documents
+ 
+    return render(request, 'news/about_us.html', context) 
+
+def send_writing(request):
+    context = {}
+    model_criteria = {'object_id' : OuterRef('id')}
+    logo = Logo.objects.annotate(foto=get_top_foto(model_criteria)) \
+                .order_by('-created_at')[:1]              
+    context['logo'] = logo
+
+    social_media = SocialMedia.objects.all().order_by('-created_at')            
+    context['social_media'] = social_media
+ 
+    send_writing = Pages.objects.filter(kind='send writing')[:1]              
+    if send_writing:
+        context['send_writing'] = send_writing.get()
+    # get top 3 category for menu 
+    # category = Categories.objects.order_by('id')[:3]
+    # context['category'] = category
+
+    # get top 4 News for home page
+    # news = News.objects.order_by('-created_at')[:4]
+    # context['news'] = news
+
+    # model_criteria = {'object_id' : OuterRef('id')}
+    # news = News.objects.annotate(foto=get_top_foto(model_criteria)) \
+    #             .order_by('-created_at')[:4]              
+    # context['news'] = news
+    # print(object_list)
+
+    # documents = Documents.objects.order_by('-created_at')[:5]
+    # context['documents'] = documents
+ 
+    return render(request, 'news/send_writing.html', context) 
 
 
 # def redir_view(request):
