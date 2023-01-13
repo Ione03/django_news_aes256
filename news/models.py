@@ -206,6 +206,7 @@ class Video(BaseModel):
 class PagesKind(models.TextChoices):
     ABOUT_US = 'about us'
     SEND_WRITING = 'send writing'
+    CONTACT_US = 'contact us'
 
 class Pages(BaseModel):        
     admin = models.ForeignKey(User, on_delete=models.PROTECT) # translatenya sama aja=admin juga

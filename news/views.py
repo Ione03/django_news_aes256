@@ -7,6 +7,7 @@ from django.db.models import Count, OuterRef, Subquery
 from django.http import HttpResponse
 from django.shortcuts import render
 from pyaes256 import PyAES256  # Our Library
+from django.utils.translation import gettext as _
 
 from .models import *
 from .utils import get_ip
@@ -22,8 +23,25 @@ def get_top_foto(model_criteria):
     return Subquery(Photo.objects.filter(**model_criteria) \
         .order_by('id').values('file_path')[:1])  # slice 1 data return (antisipasi HIGHLIGH1 lebih dari satu)
 
+def get_date_time():
+    skrg = datetime.datetime.today()
+    hari = _(skrg.strftime("%A"))
+    tgl = skrg.strftime("%d")
+    bln = skrg.strftime("%B")
+    tahun = skrg.strftime("%Y")
+
+    tgl = tgl + " " + bln + " " + tahun
+
+    return {        
+        "hari": hari,
+        "tgl": tgl,
+    }
+
 def index(request):
     context = {}
+
+    # print(get_date_time())
+    context.update(get_date_time())
 
     # get top 3 category for menu 
     category = Categories.objects.order_by('id')[:3]
@@ -62,6 +80,11 @@ def index(request):
 
 def about_us(request):
     context = {}
+
+    # get top 3 category for menu 
+    category = Categories.objects.order_by('id')[:3]
+    context['category'] = category
+
     model_criteria = {'object_id' : OuterRef('id')}
     logo = Logo.objects.annotate(foto=get_top_foto(model_criteria)) \
                 .order_by('-created_at')[:1]              
@@ -94,8 +117,53 @@ def about_us(request):
  
     return render(request, 'news/about_us.html', context) 
 
+def contact_us(request):
+    context = {}
+
+    # get top 3 category for menu 
+    category = Categories.objects.order_by('id')[:3]
+    context['category'] = category
+
+
+    model_criteria = {'object_id' : OuterRef('id')}
+    logo = Logo.objects.annotate(foto=get_top_foto(model_criteria)) \
+                .order_by('-created_at')[:1]              
+    context['logo'] = logo
+
+    social_media = SocialMedia.objects.all().order_by('-created_at')            
+    context['social_media'] = social_media
+ 
+    
+    contact_us = Pages.objects.filter(kind='contact us')[:1]           
+    if contact_us:        
+        context['contact_us'] = contact_us.get()
+    # get top 3 category for menu 
+    # category = Categories.objects.order_by('id')[:3]
+    # context['category'] = category
+
+    # get top 4 News for home page
+    # news = News.objects.order_by('-created_at')[:4]
+    # context['news'] = news
+
+    # model_criteria = {'object_id' : OuterRef('id')}
+    # news = News.objects.annotate(foto=get_top_foto(model_criteria)) \
+    #             .order_by('-created_at')[:4]              
+    # context['news'] = news
+    # print(object_list)
+
+    # documents = Documents.objects.order_by('-created_at')[:5]
+    # context['documents'] = documents
+ 
+    return render(request, 'news/contact_us.html', context)     
+
 def send_writing(request):
     context = {}
+
+    # get top 3 category for menu 
+    category = Categories.objects.order_by('id')[:3]
+    context['category'] = category
+
+
     model_criteria = {'object_id' : OuterRef('id')}
     logo = Logo.objects.annotate(foto=get_top_foto(model_criteria)) \
                 .order_by('-created_at')[:1]              
@@ -295,7 +363,6 @@ def download_link(request, pk=None):
     # context['documents'] = documents
 # 
     return render(request, 'news/documents-detail.html', context) 
-
 
 def redirect_link(request, slug):
     # print(slug)
