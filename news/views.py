@@ -1,8 +1,11 @@
 import codecs
 import datetime
 
+from django.apps import apps
 from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
 from django.core import signing
+from django.core.paginator import Paginator
 from django.db.models import Count, OuterRef, Subquery
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render
@@ -11,7 +14,6 @@ from pyaes256 import PyAES256  # Our Library
 
 from .models import *
 from .utils import get_ip
-
 
 # def get_top_foto(model_criteria):    
 #     ''' contoh :
@@ -50,6 +52,7 @@ def index(request):
     # get top 3 category for menu 
     category = Categories.objects.order_by('id')[:3]
     context['category'] = category
+    
 
     # get top 4 News for home page
     # news = News.objects.order_by('-created_at')[:4]
@@ -78,6 +81,13 @@ def index(request):
 
     social_media = SocialMedia.objects.all().order_by('-created_at')            
     context['social_media'] = social_media
+
+    recent_posts = News.objects.annotate(foto=get_photo('news')) \
+                .order_by('-created_at')[:4]              
+    context['recent_posts'] = recent_posts
+
+    category_list = Categories.objects.order_by('id')
+    context['category_list'] = category_list
  
     return render(request, 'news/index.html', context) 
 
@@ -90,7 +100,6 @@ def detail(request, slug):
     # get top 3 category for menu 
     category = Categories.objects.order_by('id')[:3]
     context['category'] = category
-
     
     news = get_object_or_404(News, slug=slug)    
     context['news'] = news
@@ -111,6 +120,7 @@ def detail(request, slug):
 
     # Relate POST
     # get 2 news except slug
+
     related_news = News.objects.exclude(slug=slug) \
         .annotate(foto=get_photo('news')) \
         .order_by('-created_at')[:2]
@@ -122,23 +132,139 @@ def detail(request, slug):
         .order_by('view_count')[:3]
     # print('rel = ' , related_news)
     context['trending_news'] = trending_news
-
+    
+    category_list = Categories.objects.order_by('id')
+    context['category_list'] = category_list
 
     logo = Logo.objects.annotate(foto=get_photo('logo')) \
                 .order_by('-created_at')[:1]              
     context['logo'] = logo
-
     
     about_us = Pages.objects.filter(kind='about us')[:1]       
     # print('about_us', about_us)       
     if about_us:        
         context['about_us'] = about_us.get()
     
+    recent_posts = News.objects.annotate(foto=get_photo('news')) \
+                .order_by('-created_at')[:4]              
+    context['recent_posts'] = recent_posts
 
     social_media = SocialMedia.objects.all().order_by('-created_at')            
     context['social_media'] = social_media
  
     return render(request, 'news/detail.html', context) 
+
+def get_content_list(model, kind, slug):
+    # print(site_id, lang, model, kind, slug)
+    # Proses Slug Dulu
+    if not slug:
+        raise Http404("Halaman tidak ditemukan!")
+
+    subquery_foto = get_photo(kind)
+    # print(slug.lower)
+    if slug == 'all':    
+        return model.objects.annotate(file_path=subquery_foto) \
+                .order_by('-created_at') # ALL data (tambah paginasi di halaman list)
+        # if obj:            
+        # return obj
+        # else:
+        #     raise Http404("Halaman tidak ditemukan!")
+    else:
+        # Get categori ID first
+        categories = Categories.objects.filter(slug=slug)
+        categories = categories.get() if categories else None
+
+        if categories:
+            return model.objects.filter(category_id=categories.id) \
+                .annotate(file_path=subquery_foto) \
+                .order_by('-created_at') # ALL data (tambah paginasi di halaman list)
+
+        else:
+            raise Http404("Categories "+ slug +" tidak ditemukan!")
+
+
+def list(request, kind, slug):
+    context = {}
+
+ 
+    # print(get_date_time())
+    # context.update(get_date_time())
+
+    # get top 3 category for menu 
+    category = Categories.objects.order_by('id')[:3]
+    context['category'] = category
+    
+    # news = get_object_or_404(News, slug=slug)    
+    # context['news'] = news
+
+    # foto = Photo.objects.filter(object_id = news.id)[:1]
+    # if foto:
+    #     foto = foto.get()
+    #     context['newsfoto'] = foto       
+
+    context['kind'] = kind
+    context['slug'] = slug
+
+    model = apps.get_model('news', kind) 
+    content_list = get_content_list(model, kind, slug)    
+
+    if content_list:
+        kind_data_per_page = 8
+
+        paginator = Paginator(content_list, kind_data_per_page) # Show 25 contacts per page.
+        page_number = request.GET.get('page', 1) # default = 1
+
+        # if not page_number:
+        #     page_number = 1 # jika tidak ada parameter (default = 1)
+                
+        # if page_number:
+        context['page_list'] = paginator.get_page(page_number)     
+
+    # model_criteria = {'object_id' : OuterRef('id')}
+    # news = News.objects.annotate(foto=get_top_foto(model_criteria)) \
+    #             .order_by('-created_at')[:4]              
+    # context['news'] = news
+    # print(object_list)
+
+    # documents = Documents.objects.order_by('-created_at')[:5]
+    # context['documents'] = documents
+
+    # Relate POST
+    # get 2 news except slug
+
+    related_news = News.objects.exclude(slug=slug) \
+        .annotate(foto=get_photo('news')) \
+        .order_by('-created_at')[:2]
+    # print('rel = ' , related_news)
+    context['related_news'] = related_news
+
+    trending_news = News.objects.exclude(slug=slug) \
+        .annotate(foto=get_photo('news')) \
+        .order_by('view_count')[:3]
+    # print('rel = ' , related_news)
+    context['trending_news'] = trending_news
+    
+    category_list = Categories.objects.order_by('id')
+    context['category_list'] = category_list
+
+    logo = Logo.objects.annotate(foto=get_photo('logo')) \
+                .order_by('-created_at')[:1]              
+    context['logo'] = logo
+    
+    about_us = Pages.objects.filter(kind='about us')[:1]       
+    # print('about_us', about_us)       
+    if about_us:        
+        context['about_us'] = about_us.get()
+    
+    recent_posts = News.objects.annotate(foto=get_photo('news')) \
+                .order_by('-created_at')[:4]              
+    context['recent_posts'] = recent_posts
+
+    social_media = SocialMedia.objects.all().order_by('-created_at')            
+    context['social_media'] = social_media
+ 
+    return render(request, 'news/list.html', context) 
+
 
 
 def about_us(request):
@@ -158,7 +284,7 @@ def about_us(request):
  
     
     about_us = Pages.objects.filter(kind='about us')[:1]       
-    print('about_us', about_us)       
+    # print('about_us', about_us)       
     if about_us:        
         context['about_us'] = about_us.get()
     # get top 3 category for menu 
@@ -177,6 +303,16 @@ def about_us(request):
 
     # documents = Documents.objects.order_by('-created_at')[:5]
     # context['documents'] = documents
+
+    category_list = Categories.objects.order_by('id')
+    context['category_list'] = category_list
+
+
+    
+    
+    recent_posts = News.objects.annotate(foto=get_photo('news')) \
+                .order_by('-created_at')[:4]              
+    context['recent_posts'] = recent_posts
  
     return render(request, 'news/about_us.html', context) 
 
@@ -216,6 +352,21 @@ def contact_us(request):
 
     # documents = Documents.objects.order_by('-created_at')[:5]
     # context['documents'] = documents
+
+    category_list = Categories.objects.order_by('id')
+    context['category_list'] = category_list
+
+
+    
+    
+    recent_posts = News.objects.annotate(foto=get_photo('news')) \
+                .order_by('-created_at')[:4]              
+    context['recent_posts'] = recent_posts
+
+    about_us = Pages.objects.filter(kind='about us')[:1]       
+    # print('about_us', about_us)       
+    if about_us:        
+        context['about_us'] = about_us.get()
  
     return render(request, 'news/contact_us.html', context)     
 
@@ -227,7 +378,7 @@ def send_writing(request):
     context['category'] = category
 
 
-    model_criteria = {'object_id' : OuterRef('id')}
+    # model_criteria = {'object_id' : OuterRef('id')}
     logo = Logo.objects.annotate(foto=get_photo('logo')) \
                 .order_by('-created_at')[:1]              
     context['logo'] = logo
@@ -254,6 +405,21 @@ def send_writing(request):
 
     # documents = Documents.objects.order_by('-created_at')[:5]
     # context['documents'] = documents
+    category_list = Categories.objects.order_by('id')
+    context['category_list'] = category_list
+
+
+    
+    
+    recent_posts = News.objects.annotate(foto=get_photo('news')) \
+                .order_by('-created_at')[:4]              
+    context['recent_posts'] = recent_posts
+
+
+    about_us = Pages.objects.filter(kind='about us')[:1]       
+    # print('about_us', about_us)       
+    if about_us:        
+        context['about_us'] = about_us.get()
  
     return render(request, 'news/send_writing.html', context) 
 
@@ -269,6 +435,13 @@ def send_writing(request):
 
 def download_link(request, pk=None):
     context = {}
+
+    logo = Logo.objects.annotate(foto=get_photo('logo')) \
+                .order_by('-created_at')[:1]              
+    context['logo'] = logo
+
+    social_media = SocialMedia.objects.all().order_by('-created_at')            
+    context['social_media'] = social_media
 
     # get setting expired value in second
     expired_link = getattr(settings, "EXPIRED_LINK", None)
