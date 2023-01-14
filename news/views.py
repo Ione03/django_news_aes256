@@ -1,13 +1,13 @@
-import codecs
+# import codecs
 import datetime
 
 from django.apps import apps
 from django.conf import settings
-from django.contrib.contenttypes.models import ContentType
+# from django.contrib.contenttypes.models import ContentType
 from django.core import signing
 from django.core.paginator import Paginator
-from django.db.models import Count, OuterRef, Subquery
-from django.http import HttpResponse
+from django.db.models import OuterRef, Subquery
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.utils.translation import gettext as _
 from pyaes256 import PyAES256  # Our Library
@@ -66,6 +66,10 @@ def index(request):
 
     documents = Documents.objects.order_by('-created_at')[:5]
     context['documents'] = documents
+
+    video = Video.objects.annotate(foto=get_photo('video')) \
+        .order_by('-created_at')
+    context['video'] = video
 
 
     logo = Logo.objects.annotate(foto=get_photo('logo')) \
@@ -182,7 +186,6 @@ def get_content_list(model, kind, slug):
         else:
             raise Http404("Categories "+ slug +" tidak ditemukan!")
 
-
 def list(request, kind, slug):
     context = {}
 
@@ -264,8 +267,6 @@ def list(request, kind, slug):
     context['social_media'] = social_media
  
     return render(request, 'news/list.html', context) 
-
-
 
 def about_us(request):
     context = {}
@@ -422,7 +423,6 @@ def send_writing(request):
         context['about_us'] = about_us.get()
  
     return render(request, 'news/send_writing.html', context) 
-
 
 # def redir_view(request):
 #     signer = signing.Signer(salt='safe-redirect')
