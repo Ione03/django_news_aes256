@@ -66,6 +66,7 @@ class StatusActive(models.TextChoices):
 class News(BaseModel):
     # judul berita
     title = models.CharField(max_length=500)    
+    view_count = models.PositiveIntegerField(default=0, editable=False)         # jumlah views / read    
     
     # slug dari judul berita
     # mariaDB cannot create unique ID more than 255 char

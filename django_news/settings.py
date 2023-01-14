@@ -164,6 +164,7 @@ CKEDITOR_CONFIGS = {
         "removePlugins": ("exportpdf","scayt"),
         'extraPlugins': ','.join(
             [
+                'youtube',
                 'embedsemantic',            
                 'autolink',            
                 'codesnippet',                

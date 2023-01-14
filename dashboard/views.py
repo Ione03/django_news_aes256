@@ -18,8 +18,6 @@ from . import forms
 
     # Categories, Documents, DownloadLink, News, Photo, StatusActive, Logo
 
-
-
 def redirect_to_login(request):  
 
     if request.user.is_authenticated:

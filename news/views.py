@@ -5,23 +5,27 @@ from django.conf import settings
 from django.core import signing
 from django.db.models import Count, OuterRef, Subquery
 from django.http import HttpResponse
-from django.shortcuts import render
-from pyaes256 import PyAES256  # Our Library
+from django.shortcuts import get_object_or_404, render
 from django.utils.translation import gettext as _
+from pyaes256 import PyAES256  # Our Library
 
 from .models import *
 from .utils import get_ip
 
 
-def get_top_foto(model_criteria):    
-    ''' contoh :
-        field_name = berita__id             # field
-        field_value = 'photo__berita__id'   # string
+# def get_top_foto(model_criteria):    
+#     ''' contoh :
+#         field_name = berita__id             # field
+#         field_value = 'photo__berita__id'   # string
 
-        model_criteria = (berita__id=OuterRef('photo__berita__id'))
-    '''
-    return Subquery(Photo.objects.filter(**model_criteria) \
-        .order_by('id').values('file_path')[:1])  # slice 1 data return (antisipasi HIGHLIGH1 lebih dari satu)
+#         model_criteria = (berita__id=OuterRef('photo__berita__id'))
+#     '''
+#     return Subquery(Photo.objects.filter(**model_criteria) \
+#         .order_by('id').values('file_path')[:1])  # slice 1 data return (antisipasi HIGHLIGH1 lebih dari satu)
+
+def get_photo(model_name): # model name in string
+    return Subquery(Photo.objects.filter(object_id=OuterRef('id'), content_type__model=model_name) \
+        .values('file_path')[:1])
 
 def get_date_time():
     skrg = datetime.datetime.today()
@@ -51,8 +55,8 @@ def index(request):
     # news = News.objects.order_by('-created_at')[:4]
     # context['news'] = news
 
-    model_criteria = {'object_id' : OuterRef('id')}
-    news = News.objects.annotate(foto=get_top_foto(model_criteria)) \
+    # model_criteria = {'object_id' : OuterRef('id')}
+    news = News.objects.annotate(foto=get_photo('news')) \
                 .order_by('-created_at')[:4]              
     context['news'] = news
     # print(object_list)
@@ -61,7 +65,7 @@ def index(request):
     context['documents'] = documents
 
 
-    logo = Logo.objects.annotate(foto=get_top_foto(model_criteria)) \
+    logo = Logo.objects.annotate(foto=get_photo('logo')) \
                 .order_by('-created_at')[:1]              
     context['logo'] = logo
 
@@ -77,6 +81,65 @@ def index(request):
  
     return render(request, 'news/index.html', context) 
 
+def detail(request, slug):
+    context = {}
+
+    # print(get_date_time())
+    context.update(get_date_time())
+
+    # get top 3 category for menu 
+    category = Categories.objects.order_by('id')[:3]
+    context['category'] = category
+
+    
+    news = get_object_or_404(News, slug=slug)    
+    context['news'] = news
+
+    foto = Photo.objects.filter(object_id = news.id)[:1]
+    if foto:
+        foto = foto.get()
+        context['newsfoto'] = foto        
+
+    model_criteria = {'object_id' : OuterRef('id')}
+    # news = News.objects.annotate(foto=get_top_foto(model_criteria)) \
+    #             .order_by('-created_at')[:4]              
+    # context['news'] = news
+    # print(object_list)
+
+    # documents = Documents.objects.order_by('-created_at')[:5]
+    # context['documents'] = documents
+
+    # Relate POST
+    # get 2 news except slug
+    related_news = News.objects.exclude(slug=slug) \
+        .annotate(foto=get_photo('news')) \
+        .order_by('-created_at')[:2]
+    # print('rel = ' , related_news)
+    context['related_news'] = related_news
+
+    trending_news = News.objects.exclude(slug=slug) \
+        .annotate(foto=get_photo('news')) \
+        .order_by('view_count')[:3]
+    # print('rel = ' , related_news)
+    context['trending_news'] = trending_news
+
+
+    logo = Logo.objects.annotate(foto=get_photo('logo')) \
+                .order_by('-created_at')[:1]              
+    context['logo'] = logo
+
+    
+    about_us = Pages.objects.filter(kind='about us')[:1]       
+    # print('about_us', about_us)       
+    if about_us:        
+        context['about_us'] = about_us.get()
+    
+
+    social_media = SocialMedia.objects.all().order_by('-created_at')            
+    context['social_media'] = social_media
+ 
+    return render(request, 'news/detail.html', context) 
+
 
 def about_us(request):
     context = {}
@@ -86,7 +149,7 @@ def about_us(request):
     context['category'] = category
 
     model_criteria = {'object_id' : OuterRef('id')}
-    logo = Logo.objects.annotate(foto=get_top_foto(model_criteria)) \
+    logo = Logo.objects.annotate(foto=get_photo('logo')) \
                 .order_by('-created_at')[:1]              
     context['logo'] = logo
 
@@ -126,7 +189,7 @@ def contact_us(request):
 
 
     model_criteria = {'object_id' : OuterRef('id')}
-    logo = Logo.objects.annotate(foto=get_top_foto(model_criteria)) \
+    logo = Logo.objects.annotate(foto=get_photo('logo')) \
                 .order_by('-created_at')[:1]              
     context['logo'] = logo
 
@@ -165,7 +228,7 @@ def send_writing(request):
 
 
     model_criteria = {'object_id' : OuterRef('id')}
-    logo = Logo.objects.annotate(foto=get_top_foto(model_criteria)) \
+    logo = Logo.objects.annotate(foto=get_photo('logo')) \
                 .order_by('-created_at')[:1]              
     context['logo'] = logo
 

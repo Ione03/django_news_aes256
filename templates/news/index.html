@@ -9,9 +9,10 @@
         <div class="d-flex align-items-center">
           <span class="badge badge-dark mr-3">Terbaru</span>
           <p class="mb-0">
-            {% for i in news %}
+              
+            {% for i in news|slice:":1" %}
             
-                {{i.title|truncatewords_html:13|safe}}
+                <a href="/detail/{{i.slug}}/">{{i.title|truncatewords_html:7|safe}}</a>
             {% endfor %}
           </p>
         </div>
@@ -40,7 +41,7 @@
               <div class="badge badge-danger fs-12 font-weight-bold mb-3">
                 {{i.category|title}}
               </div>
-              <h1 class="mb-0">{{i.title|upper|truncatewords_html:7|safe}}</h1>
+              <h1 class="mb-0"><a href="/detail/{{i.slug}}/">{{i.title|upper|truncatewords_html:7|safe}}</a></h1>
               <h1 class="mb-2">
                 {{i.content|truncatewords_html:10|safe}}
               </h1>
@@ -56,12 +57,12 @@
         <div class="card-body">
           <h2>Latest news</h2>
 
-            {% for i in news|slice:"1:" %}          
+            {% for i in news|slice:":3" %}          
               <div
                 class="d-flex border-bottom-blue pt-3 pb-4 align-items-center justify-content-between"
               >
                 <div class="pr-3">
-                  <h5>{{i.title|upper|truncatechars:35}}</h5>
+                  <h5><a href="/detail/{{i.slug}}/">{{i.title|truncatewords_html:4|safe}}</a></h5>
                   <div class="fs-12">
                     <span class="mr-2">Post</span>{{i.created_at}}
                   </div>
