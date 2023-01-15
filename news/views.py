@@ -108,10 +108,13 @@ def detail(request, slug):
     news = get_object_or_404(News, slug=slug)    
     context['news'] = news
 
-    foto = Photo.objects.filter(object_id = news.id)[:1]
+    # Subquery(Photo.objects.filter(object_id=OuterRef('id'), content_type__model=model_name) \
+    #     .values('file_path')[:1])
+    foto = Photo.objects.filter(object_id = news.id, content_type__model='news')[:1]
     if foto:
         foto = foto.get()
         context['newsfoto'] = foto        
+        print('foto=', foto)
 
     model_criteria = {'object_id' : OuterRef('id')}
     # news = News.objects.annotate(foto=get_top_foto(model_criteria)) \
