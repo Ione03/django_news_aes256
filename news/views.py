@@ -600,7 +600,7 @@ def download_link(request, pk=None):
 
     # documents = Documents.objects.order_by('-created_at')[:5]
     # context['documents'] = documents
-# 
+    # 
     return render(request, 'news/documents-detail.html', context) 
 
 def redirect_link(request, slug):
